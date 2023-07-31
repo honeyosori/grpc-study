@@ -54,7 +54,7 @@ sourceSets {
 jar {
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	manifest {
-		attributes "Main-Class": "ecommerce.ProductInfoServerApplication"
+		attributes "Main-Class": "GrpcServerApplication"
 	}
 	from {
 		configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }

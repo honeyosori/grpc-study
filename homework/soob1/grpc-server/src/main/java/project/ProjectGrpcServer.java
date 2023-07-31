@@ -17,7 +17,7 @@ public class ProjectGrpcServer {
                 .addService(new ProjectServiceImpl())
                 .build()
                 .start();
-        logger.info("Server started, listening on {0}", port);
+        logger.info("Server started, listening on " + port);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("*** shutting down gRPC server since JVM is shutting down");
