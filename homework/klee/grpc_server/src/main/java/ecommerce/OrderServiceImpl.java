@@ -6,7 +6,6 @@ import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -84,6 +83,7 @@ public class OrderServiceImpl extends OrderManagementGrpc.OrderManagementImplBas
         }
     }
 
+    // server streaming
     @Override
     public void searchOrders(
             StringValue request,
@@ -101,5 +101,37 @@ public class OrderServiceImpl extends OrderManagementGrpc.OrderManagementImplBas
                 }
             }
         }
+        responseObserver.onCompleted();
+    }
+
+    // client streaming
+    @Override
+    public StreamObserver<OrderManagementOuterClass.Order> updateOrders(StreamObserver<StringValue> responseObserver) {
+        return new StreamObserver<OrderManagementOuterClass.Order>() {
+            StringBuilder updatedOrderString = new StringBuilder().append("Updated Order IDs : ");
+
+            @Override
+            public void onNext(OrderManagementOuterClass.Order value) {
+                if(value != null) {
+                    orderMap.put(value.getId(), value);
+                    updatedOrderString.append(value.getId()).append(", ");
+                    logger.info("Order ID : " + value.getId() + " - Updated");
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                responseObserver.onError(new StatusException(Status.UNKNOWN));
+                logger.info("Order ID update error " + t.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+                logger.info("Update orders - Completed");
+                StringValue updatedOrders = StringValue.newBuilder().setValue(updatedOrderString.toString()).build();
+                responseObserver.onNext(updatedOrders);
+                responseObserver.onCompleted();
+            }
+        };
     }
 }
