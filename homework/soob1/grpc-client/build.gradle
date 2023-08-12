@@ -54,7 +54,7 @@ sourceSets {
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes "Main-Class": "GrpcClientApplication"
+        attributes "Main-Class": "project/ProjectClient"
     }
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }

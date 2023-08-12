@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+
+package project;
+
+service ProjectService {
+  rpc getProject(ProjectId) returns (ProjectResponse);
+  rpc getProjectByMemberId(google.protobuf.Int64Value) returns (ProjectListResponse);
+  rpc createProject(ProjectRequest) returns (ProjectResponse);
+  rpc deleteProject(ProjectId) returns (google.protobuf.Empty);
+  // stream
+  rpc createProjects(stream ProjectRequest) returns (stream ProjectResponse);
+  rpc deleteProjects(stream ProjectId) returns (google.protobuf.Empty);
+}
+
+message ProjectId {
+  int64 value = 1;
+}
+
+message ProjectRequest {
+  string name = 1;
+  int64 memberId = 2;
+}
+
+message ProjectResponse {
+  int64 id = 1;
+  string name = 2;
+  int64 memberId = 3;
+}
+
+message ProjectListResponse {
+  repeated ProjectResponse projects = 1;
+}

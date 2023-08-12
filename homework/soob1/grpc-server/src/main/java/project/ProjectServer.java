@@ -6,10 +6,16 @@ import io.grpc.ServerBuilder;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class ProjectGrpcServer {
+public class ProjectServer {
 
-    private static final Logger logger = Logger.getLogger(ProjectGrpcServer.class.getName());
+    private static final Logger logger = Logger.getLogger(ProjectServer.class.getName());
     private Server server;
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        final ProjectServer server = new ProjectServer();
+        server.start();
+        server.blockUntilShutdown();
+    }
 
     public void start() throws IOException {
         int port = 50051;

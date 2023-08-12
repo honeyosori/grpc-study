@@ -1,44 +1,66 @@
 package project;
 
 import com.google.protobuf.Empty;
-import io.grpc.Status;
-import io.grpc.StatusException;
+import com.google.protobuf.Int64Value;
 import io.grpc.stub.StreamObserver;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBase {
 
-    private Map<Long, Project> memberProjectMap = new HashMap<>();
-    private Long lastProjectId = 0L;
+    private ProjectRepository projectRepository;
 
-    @Override
-    public void createProjectByMember(ProjectOuterClass.Member request, StreamObserver<ProjectOuterClass.Project> responseObserver) {
-        long memberId = request.getId();
-        String projectName = request.getName() + " (" + request.getLoginId() + ")";
-        Project project = new Project(++lastProjectId, projectName, memberId);
+	public ProjectServiceImpl() {
+		projectRepository = new ProjectRepository();
+	}
 
-        memberProjectMap.put(memberId, project);
+	@Override
+	public void getProject(ProjectInfo.ProjectId request, StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
+		long projectId = request.getValue();
+		Project project = projectRepository.findById(projectId);
 
-        responseObserver.onNext(ProjectOuterClass.Project
-                .newBuilder()
-                .setId(project.getId())
-                .setName(project.getName())
-                .setMemberId(project.getMemberId())
-                .build());
-        responseObserver.onCompleted();
-    }
+		ProjectInfo.ProjectResponse projectResponse = ProjectInfo.ProjectResponse
+				.newBuilder()
+				.setId(project.getId())
+				.setName(project.getName())
+				.setMemberId(project.getMemberId())
+				.build();
 
-    @Override
-    public void deleteProjectByMember(ProjectOuterClass.MemberId request, StreamObserver<Empty> responseObserver) {
-        long memberId = request.getValue();
+		responseObserver.onNext(projectResponse);
+		responseObserver.onCompleted();
+	}
 
-        if (memberProjectMap.containsKey(memberId)) {
-            memberProjectMap.remove(memberId);
-            responseObserver.onCompleted();
-        } else {
-            responseObserver.onError(new StatusException(Status.NOT_FOUND));
-        }
-    }
+	@Override
+	public void getProjectByMemberId(Int64Value request, StreamObserver<ProjectInfo.ProjectListResponse> responseObserver) {
+		super.getProjectByMemberId(request, responseObserver);
+	}
+
+	@Override
+	public void createProject(ProjectInfo.ProjectRequest request, StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
+		Project project = new Project(request.getName(), request.getMemberId());
+		projectRepository.save(project);
+
+		ProjectInfo.ProjectResponse projectResponse = ProjectInfo.ProjectResponse
+				.newBuilder()
+				.setId(project.getId())
+				.setName(project.getName())
+				.setMemberId(project.getMemberId())
+				.build();
+
+		responseObserver.onNext(projectResponse);
+		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void deleteProject(ProjectInfo.ProjectId request, StreamObserver<Empty> responseObserver) {
+		super.deleteProject(request, responseObserver);
+	}
+
+	@Override
+	public StreamObserver<ProjectInfo.ProjectRequest> createProjects(StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
+		return super.createProjects(responseObserver);
+	}
+
+	@Override
+	public StreamObserver<ProjectInfo.ProjectId> deleteProjects(StreamObserver<Empty> responseObserver) {
+		return super.deleteProjects(responseObserver);
+	}
 }

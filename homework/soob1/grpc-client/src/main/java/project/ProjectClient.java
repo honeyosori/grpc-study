@@ -1,13 +1,13 @@
+package project;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import project.ProjectOuterClass;
-import project.ProjectServiceGrpc;
 
 import java.util.logging.Logger;
 
-public class GrpcClientApplication {
+public class ProjectClient {
 
-    private static final Logger logger = Logger.getLogger(GrpcClientApplication.class.getName());
+    private static final Logger logger = Logger.getLogger(ProjectClient.class.getName());
 
     public static void main(String[] args) {
         ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
@@ -16,14 +16,13 @@ public class GrpcClientApplication {
 
         ProjectServiceGrpc.ProjectServiceBlockingStub stub = ProjectServiceGrpc.newBlockingStub(channel);
 
-        ProjectOuterClass.Project project = stub.createProjectByMember(ProjectOuterClass.Member
+        ProjectInfo.ProjectResponse projectResponse = stub.createProject(ProjectInfo.ProjectRequest
                 .newBuilder()
-                .setId(1L)
-                .setLoginId("user1")
-                .setName("사용자1")
+                .setName("new project")
+                .setMemberId(1L)
                 .build());
 
-        logger.info("Project [" + project.getName() + "] created.");
+        logger.info("Project ID: " + projectResponse.getId() + " created successfully.");
         channel.shutdown();
     }
 }

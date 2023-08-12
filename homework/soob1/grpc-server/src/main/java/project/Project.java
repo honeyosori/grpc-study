@@ -1,13 +1,22 @@
 package project;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
 public class Project {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private Long memberId;
 
-    public Project(Long id, String name, Long memberId) {
-        this.id = id;
+    protected Project() {}
+
+    public Project(String name, Long memberId) {
         this.name = name;
         this.memberId = memberId;
     }
