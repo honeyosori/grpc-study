@@ -1,9 +1,8 @@
 package project;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
+import javax.persistence.*;
+import java.util.List;
+import java.util.Optional;
 
 public class ProjectRepository {
 
@@ -14,8 +13,13 @@ public class ProjectRepository {
 		em = emf.createEntityManager();
 	}
 
-	public Project findById(Long id) {
-		return em.find(Project.class, id);
+	public Optional<Project> findById(Long id) {
+		return Optional.ofNullable(em.find(Project.class, id));
+	}
+
+	public List<Project> findByMemberId(Long memberId) {
+		return em.createQuery("select p from Project p where p.memberId = " + memberId, Project.class)
+				.getResultList();
 	}
 
 	public Project save(Project project) {
@@ -36,7 +40,7 @@ public class ProjectRepository {
 
 		try {
 			transaction.begin();
-			Project project = findById(id);
+			Project project = findById(id).orElseThrow(() -> new EntityNotFoundException());
 			em.remove(project);
 			transaction.commit();
 		} catch (Exception e) {

@@ -2,7 +2,13 @@ package project;
 
 import com.google.protobuf.Empty;
 import com.google.protobuf.Int64Value;
+import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBase {
 
@@ -15,35 +21,39 @@ public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBas
 	@Override
 	public void getProject(ProjectInfo.ProjectId request, StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
 		long projectId = request.getValue();
-		Project project = projectRepository.findById(projectId);
+		Optional<Project> project = projectRepository.findById(projectId);
 
-		ProjectInfo.ProjectResponse projectResponse = ProjectInfo.ProjectResponse
-				.newBuilder()
-				.setId(project.getId())
-				.setName(project.getName())
-				.setMemberId(project.getMemberId())
-				.build();
-
-		responseObserver.onNext(projectResponse);
-		responseObserver.onCompleted();
+		if (project.isPresent()) {
+			ProjectInfo.ProjectResponse projectResponse = project.get().toResponse();
+			responseObserver.onNext(projectResponse);
+			responseObserver.onCompleted();
+		} else {
+			responseObserver.onError(new StatusException(Status.NOT_FOUND));
+		}
 	}
 
 	@Override
 	public void getProjectByMemberId(Int64Value request, StreamObserver<ProjectInfo.ProjectListResponse> responseObserver) {
-		super.getProjectByMemberId(request, responseObserver);
+		long memberId = request.getValue();
+		List<Project> projects = projectRepository.findByMemberId(memberId);
+
+		List<ProjectInfo.ProjectResponse> projectResponses = projects.stream()
+				.map(Project::toResponse)
+				.collect(Collectors.toList());
+		ProjectInfo.ProjectListResponse projectListResponse = ProjectInfo.ProjectListResponse
+				.newBuilder()
+				.addAllProjects(projectResponses)
+				.build();
+
+		responseObserver.onNext(projectListResponse);
+		responseObserver.onCompleted();
 	}
 
 	@Override
 	public void createProject(ProjectInfo.ProjectRequest request, StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
 		Project project = new Project(request.getName(), request.getMemberId());
 		projectRepository.save(project);
-
-		ProjectInfo.ProjectResponse projectResponse = ProjectInfo.ProjectResponse
-				.newBuilder()
-				.setId(project.getId())
-				.setName(project.getName())
-				.setMemberId(project.getMemberId())
-				.build();
+		ProjectInfo.ProjectResponse projectResponse = project.toResponse();
 
 		responseObserver.onNext(projectResponse);
 		responseObserver.onCompleted();
@@ -51,16 +61,52 @@ public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBas
 
 	@Override
 	public void deleteProject(ProjectInfo.ProjectId request, StreamObserver<Empty> responseObserver) {
-		super.deleteProject(request, responseObserver);
+		long projectId = request.getValue();
+		projectRepository.deleteById(projectId);
+		responseObserver.onCompleted();
 	}
 
 	@Override
 	public StreamObserver<ProjectInfo.ProjectRequest> createProjects(StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
-		return super.createProjects(responseObserver);
+		return new StreamObserver<>() {
+			@Override
+			public void onNext(ProjectInfo.ProjectRequest value) {
+				Project project = new Project(value.getName(), value.getMemberId());
+				projectRepository.save(project);
+				ProjectInfo.ProjectResponse projectResponse = project.toResponse();
+				responseObserver.onNext(projectResponse);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onCompleted() {
+				responseObserver.onCompleted();
+			}
+		};
 	}
 
 	@Override
 	public StreamObserver<ProjectInfo.ProjectId> deleteProjects(StreamObserver<Empty> responseObserver) {
-		return super.deleteProjects(responseObserver);
+		return new StreamObserver<>() {
+			@Override
+			public void onNext(ProjectInfo.ProjectId value) {
+				long projectId = value.getValue();
+				projectRepository.deleteById(projectId);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onCompleted() {
+				responseObserver.onCompleted();
+			}
+		};
 	}
 }

@@ -5,6 +5,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import static project.ProjectInfo.*;
+
 @Entity
 public class Project {
 
@@ -31,5 +33,13 @@ public class Project {
 
     public Long getMemberId() {
         return memberId;
+    }
+
+    public ProjectResponse toResponse() {
+        return ProjectResponse.newBuilder()
+                .setId(id)
+                .setName(name)
+                .setMemberId(memberId)
+                .build();
     }
 }
