@@ -18,7 +18,9 @@ public class ProjectClient {
                 .usePlaintext()
                 .build();
 
-        ProjectServiceGrpc.ProjectServiceBlockingStub stub = ProjectServiceGrpc.newBlockingStub(channel);
+        TokenCallCredentials tokenCallCredentials = new TokenCallCredentials("abc");
+
+        ProjectServiceGrpc.ProjectServiceBlockingStub stub = ProjectServiceGrpc.newBlockingStub(channel).withCallCredentials(tokenCallCredentials);
         createProjectByUnaryGrpc(stub);
 
         ProjectServiceGrpc.ProjectServiceStub asyncStub = ProjectServiceGrpc.newStub(channel);

@@ -2,6 +2,7 @@ package project;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerInterceptors;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -20,7 +21,7 @@ public class ProjectServer {
     public void start() throws IOException {
         int port = 50051;
         server = ServerBuilder.forPort(port)
-                .addService(new ProjectServiceImpl())
+                .addService(ServerInterceptors.intercept(new ProjectServiceImpl(), new AuthInterceptor()))
                 .build()
                 .start();
         logger.info("Server started, listening on " + port);
