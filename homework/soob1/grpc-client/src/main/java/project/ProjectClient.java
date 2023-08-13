@@ -2,6 +2,7 @@ package project;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import java.util.concurrent.CountDownLatch;
@@ -27,13 +28,17 @@ public class ProjectClient {
     }
 
     private static void createProjectByUnaryGrpc(ProjectServiceGrpc.ProjectServiceBlockingStub stub) {
-        ProjectInfo.ProjectResponse projectResponse = stub.createProject(ProjectInfo.ProjectRequest
-                .newBuilder()
-                .setName("new project")
-                .setMemberId(1L)
-                .build());
+        try {
+            ProjectInfo.ProjectResponse projectResponse = stub.createProject(ProjectInfo.ProjectRequest
+                    .newBuilder()
+                    .setName("new project")
+                    .setMemberId(1L)
+                    .build());
 
-        logger.info("Project ID: " + projectResponse.getId() + " created successfully.");
+            logger.info("Project ID: " + projectResponse.getId() + " created successfully.");
+        } catch (StatusRuntimeException e) {
+            logger.info("[ERROR] " + e.getMessage());
+        }
     }
 
     private static void createProjectsByStreamingGrpc(ProjectServiceGrpc.ProjectServiceStub asyncStub) {
@@ -47,7 +52,8 @@ public class ProjectClient {
 
             @Override
             public void onError(Throwable t) {
-
+                logger.info("[ERROR] " + t.getMessage());
+                countDownLatch.countDown();
             }
 
             @Override
@@ -59,8 +65,8 @@ public class ProjectClient {
 
         StreamObserver<ProjectInfo.ProjectRequest> requestObserver = asyncStub.createProjects(responseObserver);
 
-        requestObserver.onNext(ProjectInfo.ProjectRequest.newBuilder().setName("project1").setMemberId(1L).build());
-        requestObserver.onNext(ProjectInfo.ProjectRequest.newBuilder().setName("project2").setMemberId(1L).build());
+        requestObserver.onNext(ProjectInfo.ProjectRequest.newBuilder().setName("project1").setMemberId(-1L).build());
+        requestObserver.onNext(ProjectInfo.ProjectRequest.newBuilder().setName("").setMemberId(1L).build());
         requestObserver.onNext(ProjectInfo.ProjectRequest.newBuilder().setName("project3").setMemberId(1L).build());
 
         if (countDownLatch.getCount() == 0) {
@@ -72,7 +78,7 @@ public class ProjectClient {
 
         try {
             if (!countDownLatch.await(120, TimeUnit.SECONDS)) {
-                logger.warning("RPC process cannot finish within 60 seconds.");
+                logger.warning("RPC process cannot finish within 120 seconds.");
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

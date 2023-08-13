@@ -3,7 +3,6 @@ package project;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Int64Value;
 import io.grpc.Status;
-import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBase {
 
-    private ProjectRepository projectRepository;
+    private final ProjectRepository projectRepository;
 
 	public ProjectServiceImpl() {
 		projectRepository = new ProjectRepository();
@@ -28,7 +27,7 @@ public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBas
 			responseObserver.onNext(projectResponse);
 			responseObserver.onCompleted();
 		} else {
-			responseObserver.onError(new StatusException(Status.NOT_FOUND));
+			responseObserver.onError(Status.NOT_FOUND.withDescription("Project with ID " + projectId + " cannot be found.").asException());
 		}
 	}
 
@@ -51,12 +50,16 @@ public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBas
 
 	@Override
 	public void createProject(ProjectInfo.ProjectRequest request, StreamObserver<ProjectInfo.ProjectResponse> responseObserver) {
-		Project project = new Project(request.getName(), request.getMemberId());
-		projectRepository.save(project);
-		ProjectInfo.ProjectResponse projectResponse = project.toResponse();
+		try {
+			Project project = new Project(request.getName(), request.getMemberId());
+			projectRepository.save(project);
+			ProjectInfo.ProjectResponse projectResponse = project.toResponse();
 
-		responseObserver.onNext(projectResponse);
-		responseObserver.onCompleted();
+			responseObserver.onNext(projectResponse);
+			responseObserver.onCompleted();
+		} catch (IllegalArgumentException e) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asException());
+		}
 	}
 
 	@Override
@@ -71,15 +74,18 @@ public class ProjectServiceImpl extends ProjectServiceGrpc.ProjectServiceImplBas
 		return new StreamObserver<>() {
 			@Override
 			public void onNext(ProjectInfo.ProjectRequest value) {
-				Project project = new Project(value.getName(), value.getMemberId());
-				projectRepository.save(project);
-				ProjectInfo.ProjectResponse projectResponse = project.toResponse();
-				responseObserver.onNext(projectResponse);
+				try {
+					Project project = new Project(value.getName(), value.getMemberId());
+					projectRepository.save(project);
+					ProjectInfo.ProjectResponse projectResponse = project.toResponse();
+					responseObserver.onNext(projectResponse);
+				} catch (IllegalArgumentException e) {
+					responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asException());
+				}
 			}
 
 			@Override
 			public void onError(Throwable t) {
-
 			}
 
 			@Override

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public class ProjectRepository {
 
-	private EntityManager em;
+	private final EntityManager em;
 
 	public ProjectRepository() {
 		EntityManagerFactory emf = Persistence.createEntityManagerFactory("grpc-server");
@@ -40,8 +40,7 @@ public class ProjectRepository {
 
 		try {
 			transaction.begin();
-			Project project = findById(id).orElseThrow(() -> new EntityNotFoundException());
-			em.remove(project);
+			findById(id).ifPresent(em::remove);
 			transaction.commit();
 		} catch (Exception e) {
 			transaction.rollback();
