@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package document;
+
+service DocumentManagement {
+  rpc addOrganization(Organization) returns (DocumentStorage);
+  rpc deleteOrganization(OrganizationId) returns (EmptyMessage);
+  rpc getDocumentStorage(OrganizationId) returns (stream DocumentStorage);
+}
+
+message Organization {
+  int32 id = 1;
+  string name = 2;
+}
+
+message OrganizationId {
+  int32 id = 1;
+}
+
+message DocumentStorage {
+  int32 id = 1;
+  string name = 2;
+}
+
+message EmptyMessage {}
