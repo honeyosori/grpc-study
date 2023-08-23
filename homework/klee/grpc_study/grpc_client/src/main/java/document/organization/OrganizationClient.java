@@ -1,5 +1,8 @@
-package document;
+package document.organization;
 
+import document.DocumentManagementClient;
+import document.DocumentManagementGrpc;
+import document.DocumentManagementOuterClass;
 import document.global.security.TokenCallCredentials;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -11,38 +14,39 @@ import java.util.logging.Logger;
 public class OrganizationClient {
     private static final Logger logger = Logger.getLogger(OrganizationClient.class.getName());
 
-    public static void main(String[] args) {
-        TokenCallCredentials callCredentials = new TokenCallCredentials("some-secret-token");
+    private final ManagedChannel channel;
+    private final DocumentManagementGrpc.DocumentManagementBlockingStub stub;
 
-        ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost", 50051)
-                .usePlaintext()
-                .build();
-
-        DocumentManagementGrpc.DocumentManagementBlockingStub stub = DocumentManagementGrpc.newBlockingStub(channel).withCallCredentials(callCredentials);
-
-        // add Organization
-        addOrganization(stub);
-
-        // delete Organization
-        deleteOrganization(stub);
+    public OrganizationClient(ManagedChannel channel, DocumentManagementGrpc.DocumentManagementBlockingStub stub) {
+        this.channel = channel;
+        this.stub = stub;
     }
 
-    private static void addOrganization(DocumentManagementGrpc.DocumentManagementBlockingStub stub) {
+    public OrganizationClient(String host, int port) {
+        TokenCallCredentials callCredentials = new TokenCallCredentials("some-secret-token");
+
+        channel = ManagedChannelBuilder.forAddress(host, port)
+                .usePlaintext()
+                .build();
+        stub = DocumentManagementGrpc.newBlockingStub(channel).withCallCredentials(callCredentials);
+    }
+
+    public String addOrganization(int id, String name) {
         DocumentManagementOuterClass.Organization organization = DocumentManagementOuterClass.Organization
                 .newBuilder()
-                .setId(1)
-                .setName("sosok1")
+                .setId(id)
+                .setName(name)
                 .build();
 
         DocumentManagementOuterClass.DocumentStorage storage = stub.addOrganization(organization);
         logger.info("AddOrganization Response -> : " + storage.getId() + ", " + storage.getName());
+        return storage.getName();
     }
 
-    private static void deleteOrganization(DocumentManagementGrpc.DocumentManagementBlockingStub stub) {
+    public void deleteOrganization(int id) {
         DocumentManagementOuterClass.OrganizationId organizationId = DocumentManagementOuterClass.OrganizationId
                 .newBuilder()
-                .setId(2)
+                .setId(id)
                 .build();
         try {
             stub.deleteOrganization(organizationId);
@@ -54,5 +58,9 @@ public class OrganizationClient {
                 logger.log(Level.WARNING, "fail to delete storage");
             }
         }
+    }
+
+    public void shutdown() {
+        channel.shutdown();
     }
 }
